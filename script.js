@@ -3,48 +3,26 @@ const zoneViewer = document.getElementById('zoneViewer');
 let zoneFrame = document.getElementById('zoneFrame');
 const searchBar = document.getElementById('searchBar');
 const sortOptions = document.getElementById('sortOptions');
-// https://www.jsdelivr.com/tools/purge
+
 const zonesurls = [
     "./zones.json",
     "https://raw.githubusercontent.com/gn-math/assets/main/zones.json"
 ];
-let zonesURL = zonesurls[Math.floor(Math.random() * zonesurls.length)];
+let zonesURL = zonesurls[0];
 const coverURL = "https://raw.githubusercontent.com/gn-math/covers/main";
 const htmlURL = "https://raw.githubusercontent.com/gn-math/html/main";
 let zones = [];
 let popularityData = {};
 const featuredContainer = document.getElementById('featuredZones');
+
 async function listZones() {
     try {
-      let sharesponse;
-      let shajson;
-      let sha;
-        try {
-          sharesponse = await fetch("https://api.github.com/repos/gn-math/assets/commits?t="+Date.now());
-        } catch (error) {}
-        if (sharesponse && sharesponse.status === 200) {
-          try {
-            shajson = await sharesponse.json();
-            sha = shajson[0]['sha'];
-            if (sha) {
-                zonesURL = `https://cdn..net/gh/gn-math/assets@${sha}/zones.json`;
-            }
-          } catch (error) {
-            try {
-                let secondarysharesponse = await fetch("https://raw.githubusercontent.com/gn-math/xml/refs/heads/main/sha.txt?t="+Date.now());
-                if (secondarysharesponse && secondarysharesponse.status === 200) {
-                    sha = (await secondarysharesponse.text()).trim();
-                    if (sha) {
-                        zonesURL = `https://cdn..net/gh/gn-math/assets@${sha}/zones.json`;
-                    }
-                }
-            } catch(error) {}
-          }
-        }
-        const response = await fetch(zonesURL+"?t="+Date.now());
+        const response = await fetch(zonesURL + "?t=" + Date.now());
         const json = await response.json();
         zones = json;
-        zones[0].featured = true; // always gonna be the discord
+        if (zones.length > 0) {
+            zones[0].featured = true; // Always feature the first item (Discord/Featured)
+        }
         await fetchPopularity();
         sortZones();
         const search = new URLSearchParams(window.location.search);
@@ -58,7 +36,7 @@ async function listZones() {
                         window.open(zone.url, "_blank");
                     } else {
                         const url = zone.url.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL);
-                        fetch(url+"?t="+Date.now()).then(response => response.text()).then(html => {
+                        fetch(url + "?t=" + Date.now()).then(response => response.text()).then(html => {
                             document.documentElement.innerHTML = html;
                             const popup = document.createElement("div");
                             popup.style.position = "fixed";
@@ -72,7 +50,7 @@ async function listZones() {
                             popup.style.boxShadow = "0px 0px 10px rgba(0,0,0,0.1)";
                             popup.style.fontFamily = "Arial, sans-serif";
                             
-                            popup.innerHTML = `Play more games at <a href="https://gn-math.github.io" target="_blank" style="color:#004085; font-weight:bold;">https://gn-math.github.io</a>!`;
+                            popup.innerHTML = `Play more games at <a href="https://marselo.site" target="_blank" style="color:#004085; font-weight:bold;">marselo.site</a>!`;
                             
                             const closeBtn = document.createElement("button");
                             closeBtn.innerText = "✖";
@@ -107,20 +85,10 @@ async function listZones() {
         container.innerHTML = `Error loading zones: ${error}`;
     }
 }
+
 async function fetchPopularity() {
-    try {
-        const response = await fetch("https://data..com/v1/stats/packages/gh/gn-math/html@main/files?period=year");
-        const data = await response.json();
-        data.forEach(file => {
-            const idMatch = file.name.match(/\/(\d+)\.html$/);
-            if (idMatch) {
-                const id = parseInt(idMatch[1]);
-                popularityData[id] = file.hits.total;
-            }
-        });
-    } catch (error) {
-        popularityData[0] = 0;
-    }
+    // Disabled external CDN analytics call to prevent network errors
+    popularityData[0] = 0;
 }
 
 function sortZones() {
@@ -142,7 +110,7 @@ function sortZones() {
 
 function displayFeaturedZones(featuredZones) {
     featuredContainer.innerHTML = "";
-    featuredZones.forEach((file, index) => {
+    featuredZones.forEach((file) => {
         const zoneItem = document.createElement("div");
         zoneItem.className = "zone-item";
         zoneItem.onclick = () => openZone(file);
@@ -189,7 +157,7 @@ function displayFeaturedZones(featuredZones) {
 
 function displayZones(zones) {
     container.innerHTML = "";
-    zones.forEach((file, index) => {
+    zones.forEach((file) => {
         const zoneItem = document.createElement("div");
         zoneItem.className = "zone-item";
         zoneItem.onclick = () => openZone(file);
@@ -248,7 +216,7 @@ function openZone(file) {
         window.open(file.url, "_blank");
     } else {
         const url = file.url.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL);
-        fetch(url+"?t="+Date.now()).then(response => response.text()).then(html => {
+        fetch(url + "?t=" + Date.now()).then(response => response.text()).then(html => {
             if (zoneFrame.contentDocument === null) {
                 zoneFrame = document.createElement("iframe");
                 zoneFrame.id = "zoneFrame";
@@ -275,13 +243,13 @@ function openZone(file) {
 function aboutBlank() {
     const newWindow = window.open("about:blank", "_blank");
     let zone = zones.find(zone => zone.id + '' === document.getElementById('zoneId').textContent).url.replace("{COVER_URL}", coverURL).replace("{HTML_URL}", htmlURL);
-    fetch(zone+"?t="+Date.now()).then(response => response.text()).then(html => {
+    fetch(zone + "?t=" + Date.now()).then(response => response.text()).then(html => {
         if (newWindow) {
             newWindow.document.open();
             newWindow.document.write(html);
             newWindow.document.close();
         }
-    })
+    });
 }
 
 function closeZone() {
@@ -295,7 +263,7 @@ function closeZone() {
 
 function downloadZone() {
     let zone = zones.find(zone => zone.id + '' === document.getElementById('zoneId').textContent);
-    fetch(zone.url.replace("{HTML_URL}", htmlURL)+"?t="+Date.now()).then(res => res.text()).then(text => {
+    fetch(zone.url.replace("{HTML_URL}", htmlURL) + "?t=" + Date.now()).then(res => res.text()).then(text => {
         const blob = new Blob([text], {
             type: "text/plain;charset=utf-8"
         });
@@ -349,7 +317,7 @@ function sanitizeData(obj, maxStringLen = 1000, maxArrayLen = 10000) {
     }
     
     return obj;
-  }
+}
 
 async function saveData() {
     alert("This might take a while, dont touch anything other than this OK button");
@@ -433,9 +401,9 @@ async function saveData() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }
+}
   
-  async function loadData(event) {
+async function loadData(event) {
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -445,21 +413,21 @@ async function saveData() {
             data.cookies.split(';').forEach(cookie => {
               document.cookie = cookie.trim();
             });
-          }
+        }
         
-          if (data.localStorage) {
+        if (data.localStorage) {
             for (const key in data.localStorage) {
               localStorage.setItem(key, data.localStorage[key]);
             }
-          }
+        }
         
-          if (data.sessionStorage) {
+        if (data.sessionStorage) {
             for (const key in data.sessionStorage) {
               sessionStorage.setItem(key, data.sessionStorage[key]);
             }
-          }
+        }
         
-          if (data.indexedDB) {
+        if (data.indexedDB) {
             for (const dbName in data.indexedDB) {
               const stores = data.indexedDB[dbName];
               await new Promise((resolve, reject) => {
@@ -492,12 +460,12 @@ async function saveData() {
                 request.onerror = () => reject(request.error);
               });
             }
-          }
+        }
         
-          if (data.caches) {
+        if (data.caches) {
             for (const cacheName in data.caches) {
               const cache = await caches.open(cacheName);
-              await cache.keys().then(keys => Promise.all(keys.map(k => cache.delete(k)))); // clear existing
+              await cache.keys().then(keys => Promise.all(keys.map(k => cache.delete(k))));
         
               for (const entry of data.caches[cacheName]) {
                 let responseBody;
@@ -519,12 +487,12 @@ async function saveData() {
                 await cache.put(entry.url, response);
               }
             }
-          }
+        }
         alert("Data loaded");
     };
     alert("This might take a while, dont touch anything other than this OK button");
     reader.readAsText(file);
-  }
+}
 
 function darkMode() {
     document.body.classList.toggle("dark-mode");
@@ -600,26 +568,6 @@ function loadPrivacy() {
                 <li>Visit our website at <a href="https://gn-math.github.io">https://gn-math.github.io</a>, or any website of ours that links to this Privacy Notice</li>
                 <li>Engage with us in other related ways, including any sales, marketing, or events</li>
             </ul>
-            <p>Questions or concerns? Reading this Privacy Notice will help you understand your privacy rights and choices. We are responsible for making decisions about how your personal information is processed. If you do not agree with our policies and practices, please do not use our Services. If you still have any questions or concerns, please contact us at <a href="https://discord.gg/NAFw4ykZ7n">https://discord.gg/NAFw4ykZ7n</a>.</p>
-            
-            <h3>SUMMARY OF KEY POINTS</h3>
-            <p>This summary provides key points from our Privacy Notice, but you can find out more details about any of these topics by clicking the link following each key point or by using our table of contents below to find the section you are looking for.</p>
-            
-            <p><strong>What personal information do we process?</strong> When you visit, use, or navigate our Services, we may process personal information depending on how you interact with us and the Services, the choices you make, and the products and features you use. Learn more about personal information you disclose to us.</p>
-            
-            <p><strong>Do we process any sensitive personal information?</strong> Some of the information may be considered "special" or "sensitive" in certain jurisdictions, for example your racial or ethnic origins, sexual orientation, and religious beliefs. We do not process sensitive personal information.</p>
-            
-            <p><strong>Do we collect any information from third parties?</strong> We do not collect any information from third parties.</p>
-            
-            <p><strong>How do we process your information?</strong> We process your information to provide, improve, and administer our Services, communicate with you, for security and fraud prevention, and to comply with law. We may also process your information for other purposes with your consent. We process your information only when we have a valid legal reason to do so. Learn more about how we process your information.</p>
-            
-            <p><strong>In what situations and with which parties do we share personal information?</strong> We may share information in specific situations and with specific third parties. Learn more about when and with whom we share your personal information.</p>
-            
-            <p><strong>How do we keep your information safe?</strong> We have adequate organizational and technical processes and procedures in place to protect your personal information. However, no electronic transmission over the internet or information storage technology can be guaranteed to be 100% secure, so we cannot promise or guarantee that hackers, cybercriminals, or other unauthorized third parties will not be able to defeat our security and improperly collect, access, steal, or modify your information. Learn more about how we keep your information safe.</p>
-            
-            <p><strong>What are your rights?</strong> Depending on where you are located geographically, the applicable privacy law may mean you have certain rights regarding your personal information. Learn more about your privacy rights.</p>
-            
-            <p><strong>How do you exercise your rights?</strong> The easiest way to exercise your rights is by submitting a data subject access request, or by contacting us. We will consider and act upon any request in accordance with applicable data protection laws.</p>
         </div>
     `;
     popupBody.contentEditable = false;
@@ -633,24 +581,7 @@ function loadDMCA() {
         <div class="dmca-content">
             <p>
                 If you own or developed a game that is on <strong>gn-math</strong> 
-                and would like it removed, please do one of the following:
-            </p>
-            <ol>
-                <li>
-                    <a href="https://discord.gg/D4c9VFYWyU" target="_blank" rel="noopener noreferrer">
-                        Join the Discord
-                    </a> and DM <strong>breadbb</strong> or ping me in a public channel 
-                    <strong>[INSTANT RESPONSE]</strong>
-                </li>
-                <li>
-                    Email me at 
-                    <a href="mailto:gn.math.business@gmail.com">gn.math.business@gmail.com</a> 
-                    with the subject starting with <code>!DMCA</code>.
-                    <strong>[DELAYED RESPONSE]</strong>
-                </li>
-            </ol>
-            <p>
-                If you are going to do an email, please show proof you own the game before I have to ask.
+                and would like it removed, please contact support.
             </p>
         </div>
     `;
@@ -661,6 +592,7 @@ function loadDMCA() {
 function closePopup() {
     document.getElementById('popupOverlay').style.display = "none";
 }
+
 listZones();
 
 const schoolList = ["deledao", "goguardian", "lightspeed", "linewize", "securly", ".edu/"];
@@ -688,6 +620,6 @@ XMLHttpRequest.prototype.open = function (method, url) {
     return originalOpen.apply(this, arguments);
 };
 
-HTMLCanvasElement.prototype.toDataURL = function (...args) {
+HTMLCanvasElement.prototype.toDataURL = function () {
     return "";
 };
